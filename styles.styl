@@ -1,0 +1,145 @@
+// scrollrolldatepicker styles
+#scrollrolldatepicker-hidden-template
+    display none
+
+
+/*==============================================================================
+ Input decoration adjustment
+==============================================================================*/
+input[type="date"].scrollroll-input
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+
+
+input[type="date"].scrollroll-input::-webkit-calendar-picker-indicator
+    display none
+
+input[type="date"].scrollroll-input::-moz-calendar-picker-icon
+    display: none
+
+input[type="date"].scrollroll-input::-ms-clear
+    display: none
+
+input[type="date"].scrollroll-input::-ms-reveal
+    display: none
+
+
+
+/*==============================================================================
+ Default Variable Definitions
+==============================================================================*/
+:root
+    --scrollroll-input-height: 40px
+    --scrollroll-frame-color: cd-darkblue
+
+/*==============================================================================
+ScrollRoll Datepicker
+==============================================================================*/
+.scrollroll-container
+    position relative
+    display block
+    overflow: visible
+
+    .scrollroll-input
+        position: relative
+        z-index 1
+    input[type="date"].scrollroll-input::placeholder
+        display: none;
+
+    .scrollroll-calendar
+        position absolute
+        top 50%
+        right 0
+        transform translateY(-50%)
+        height var(--scrollroll-input-height)
+        width: var(--scrollroll-input-height)
+        z-index 1
+        pointer-events none
+        svg
+            padding: 5px
+            box-sizing: border-box
+
+    .scrollroll-datepicker-container.shown
+        opacity 1
+        transform translate(-50%, -50%) scale(1, 1)
+        z-index 2
+
+    .scrollroll-datepicker-container
+        position absolute
+        top 50%
+        left 50%
+        transform translate(-50%, -50%) scale(1, 0.7)
+        width 100%
+        height: 200px
+        overflow: hidden
+        opacity 0
+        transition all 0.3s
+        
+    .scrollroll-frame
+        position absolute
+        top 50%
+        left 50%
+        transform translate(-50%, -50%)
+        width 100%
+        box-sizing: border-box
+        border solid 2px var(--scrollroll-frame-color)
+        height var(--scrollroll-input-height)
+        background-color white
+
+    .scrollroll-accept-button
+        position absolute
+        top 50%
+        right 0
+        transform: translateY(-50%)
+        height: var(--scrollroll-input-height)
+        width: var(--scrollroll-input-height)
+        background-color var(--scrollroll-frame-color)
+        color white
+        cursor pointer
+        z-index 3
+        svg
+            padding 5px
+            box-sizing: border-box
+
+    .scrollrolldatepicker
+        position absolute
+        top 50%
+        left 50%
+        transform translate(-50%, -50%)
+        width 100%
+        height 100%
+        overflow: hidden
+        display flex
+        justify-content: center
+        align-items: center
+
+    .separator
+        padding 0 5px
+    .scrollroll-element-space
+        height 50%
+        width 100%
+
+    .scrollroll-element
+        padding 2px 5px 0px 5px
+        box-sizing: border-box
+        height var(--scrollroll-input-height)
+        line-height var(--scrollroll-input-height)
+        
+    .scrollroll-year-picker
+    .scrollroll-month-picker
+    .scrollroll-day-picker
+        height 100%
+        width: fit-content
+        overflow-y scroll
+        overflow-x hidden
+        -ms-overflow-style none
+        scrollbar-width none
+
+    .scrollroll-day-picker::-webkit-scrollbar
+        display none
+    .scrollroll-month-picker::-webkit-scrollbar
+        display none
+    .scrollroll-year-picker::-webkit-scrollbar
+        display none
