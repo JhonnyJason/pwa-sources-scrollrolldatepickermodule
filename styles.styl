@@ -37,14 +37,23 @@ input[type="date"].scrollroll-input::-ms-reveal
 /*==============================================================================
 ScrollRoll Datepicker
 ==============================================================================*/
+.scrollroll-container.shown
+    overflow: visible
+
+    .scrollroll-datepicker-container
+        opacity 1
+        transform translate(-50%, -50%) scale(1, 1)
+        z-index 2
+
 .scrollroll-container
     position relative
     display block
-    overflow: visible
+    overflow: hidden
 
     .scrollroll-input
-        position: relative
+        position relative
         z-index 1
+
     input[type="date"].scrollroll-input::placeholder
         display: none;
 
@@ -61,22 +70,19 @@ ScrollRoll Datepicker
             padding: 5px
             box-sizing: border-box
 
-    .scrollroll-datepicker-container.shown
-        opacity 1
-        transform translate(-50%, -50%) scale(1, 1)
-        z-index 2
-
     .scrollroll-datepicker-container
         position absolute
         top 50%
         left 50%
         transform translate(-50%, -50%) scale(1, 0.7)
         width 100%
+        box-sizing: border-box
         height: 200px
         overflow: hidden
         opacity 0
         transition all 0.3s
-        
+        background-color alpha(white, 0.6)
+
     .scrollroll-frame
         position absolute
         top 50%
@@ -87,6 +93,7 @@ ScrollRoll Datepicker
         border solid 2px var(--scrollroll-frame-color)
         height var(--scrollroll-input-height)
         background-color white
+        overflow: hidden
 
     .scrollroll-accept-button
         position absolute
@@ -110,10 +117,12 @@ ScrollRoll Datepicker
         transform translate(-50%, -50%)
         width 100%
         height 100%
+        box-sizing: border-box
         overflow: hidden
         display flex
         justify-content: center
         align-items: center
+        padding-right var(--scrollroll-input-height)
 
     .separator
         padding 0 5px

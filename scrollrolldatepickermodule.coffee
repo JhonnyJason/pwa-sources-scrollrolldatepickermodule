@@ -5,7 +5,10 @@ import { createLogFunctions } from "thingy-debug"
 #endregion
 
 ############################################################
-template = ""
+## TODO change the way how we build the basic datepicker
+#  - adjustable formate of ddmmyyyy
+#  - adjustable separator
+template = document.getElementById("scrollrolldatepicker-hidden-template").innerHTML
 
 ############################################################
 #region DOM Cache
@@ -74,10 +77,6 @@ allMonthStrings = [
 ]
 
 ############################################################
-currentYear = new Date().getFullYear()
-oldestYear = currentYear - 150
-allYears = [oldestYear..currentYear]
-
 daysForMonth = [
     31, # jan
     28, # feb
@@ -96,137 +95,324 @@ daysForMonth = [
 #endregion
 
 ############################################################
-isInputElement = false
-inputHeight = 0
+defaultOptions =  {
+    format: "dmy" # not used currently
+    separator: "." # not used currently
+    yearRange: "125" # "X" years backwards or "YYYY-YYYY"
+    height: "auto" # "auto" takes height of element | "X" height in px 
+    width: "auto" # not used currently
+    dayPos: 14 # position index of day array 0 -> 01 ... 30 -> 31
+    monthPos: 6 # position index of month array 0 -> 01 ... 11 -> 12
+    yearPos: "middle" # position index of year | specific year in Range | "start", "middle" or "end"
+}
 
 ############################################################
-visibleElements = 0
+export class ScrollRollDatepicker
+    constructor: (o) -> setOptions(this, o)
+
+    ########################################################
+    initialize: ->
+        checkElement(this)
+        digestOptions(this)
+
+        adjustHTML(this)
+        setPickerPositions(this)
+        adjustMaxDays(this)
+        # outerHeight = datepickerContainer.getBoundingClientRect().height
+        # log "outerHeight #{outerHeight}"    
+        # visibleElements = Math.ceil(outerHeight / (2 * inputHeight))
+        # log "visibleElements: #{visibleElements}"
+
+        attachEventListeners(this)
+        return
+
+    ########################################################
+    heartbeat: ->
+        # log "heartbeat"
+        checkDayScroll(this)
+        checkMonthScroll(this)
+        checkYearScroll(this)
+        adjustMaxDays(this)
+
+        # setTimeout(@nexHeartbeat, 1000) ## slower debug heartbeat
+        requestAnimationFrame(@nexHeartbeat)
+        return
+
+    ########################################################
+    reset: ->
+        @value = ""
+        setPickerPositions(this)
+        @datepickerContainer.classList.remove("shown")
+        @nexHeartbeat = () -> return
+        return
+
+    ########################################################
+    destroy: ->
+        ## TODO implement
+        # restoreHTML(this)
+        return
 
 ############################################################
-nexHeartbeat = () -> return
+#region initialization functions
 
 ############################################################
-export setUp = (id) ->
-    inputElement = document.getElementById(id)
-    isInputElement = (inputElement.tagName == "INPUT" or inputElement.tagName == "input")
+checkElement = (I) -> # I is the instance
+    log "checkElement"
+    if typeof I.element == "string" then I.element = document.getElementById(I.element)
+    if !isConnectedElement(I.element) then throw new Error("Provided Element is not a connected DOM Element!")
 
-    if isInputElement and inputElement.getAttribute("type") != "text"
-        inputElement.setAttribute("type", "text")
-        inputElement.setAttribute("placeholder", "dd.mm.yyyy")
-        inputElement.setAttribute("readonly", "readonly")
+    I.isInputElement = (I.element.tagName == "INPUT" or I.element.tagName == "input")
+
+    sanitizeElement(I)
+    return
+
+sanitizeElement = (I) -> # I is the instance
+    log "sanitizeElement"
+    # We cannot use a real Date input thanks to fkn Apple
+    if I.isInputElement and I.element.getAttribute("type") != "text"
+        I.element.setAttribute("type", "text")
+        I.element.setAttribute("placeholder", "dd.mm.yyyy")
+        I.element.setAttribute("readonly", "readonly")
+    return
+
+############################################################
+digestOptions = (I) -> # I is the instance
+    log "digestOptions"
+    ## digest format TODO
+
+    ## digest height
+    if I.height == "auto"
+        I.height = Math.ceil(I.element.getBoundingClientRect().height)
+        if I.height % 2 then I.height++
+        log I.height
+
+    ## digest width TODO
+
+    ## digest yearRange
+    tokens = I.yearRange.split("-")
+    if tokens.length == 1
+        endYear = new Date().getFullYear()
+        range = parseInt(tokens[0])
+        startYear = endYear - range
+        I.allYears = [startYear..endYear]
+    if tokens.length == 2
+        startYear = parseInt(tokens[0])
+        endYear = parseInt(tokens[0])
+        I.allYears = [startYear..endYear]
     
+    rangeLength = endYear - startYear
+    
+    ## digest yearPos
+    switch I.yearPos
+        when "start" then I.yearPos = 0
+        when "middle" then I.yearPos = Math.floor(rangeLength / 2 )
+        when "end" then I.yearPos = rangeLength
+        else
+            I.yearPos = parseInt(I.yearPos)
+            if isNan(I.yearPos) then throw new Error("Invalid yearPos provided!")
+            if I.yearPos <= endYear and I.yearPos >= startYear
+                I.yearPos = I.yearPos - startYear
+            else if I.yearPos > rangeLength then I.yearPos = rangeLength
+            else if I.yearPos < 0 then I.yearPos = 0
+    return
+
+############################################################
+adjustHTML = (I) -> # I is the instance
+    log "adjustHTML"
     ## creating the container Elements
-    outerContainer = document.createElement("div")
-    datepickerContainer = document.createElement("div")
+    I.outerContainer = document.createElement("div")
+    I.datepickerContainer = document.createElement("div")
     calendarIcon = document.createElement("div")
 
+    ## add specific styles
+    I.outerContainer.style.setProperty("--scrollroll-input-height", "#{I.height}px")
+    # I.outerContainer.style.setProperty("--scrollroll-input-width", "#{I.width}px")
+
     ## adding the expected classes
-    inputElement.classList.add("scrollroll-input")
-    outerContainer.classList.add("scrollroll-container")
-    datepickerContainer.classList.add("scrollroll-datepicker-container")
+    I.element.classList.add("scrollroll-input")
+    I.outerContainer.classList.add("scrollroll-container")
+    I.datepickerContainer.classList.add("scrollroll-datepicker-container")
     calendarIcon.classList.add("scrollroll-calendar")
 
     ## arrange the DOM 
-    inputElement.replaceWith(outerContainer)
-    outerContainer.append(inputElement)
-    outerContainer.append(datepickerContainer)
-    outerContainer.append(calendarIcon)
+    I.element.replaceWith(I.outerContainer)
+    I.outerContainer.append(I.element)
+    I.outerContainer.append(I.datepickerContainer)
+    I.outerContainer.append(calendarIcon)
 
     ## inject the HTML
-    template = scrollrolldatepickerHiddenTemplate.innerHTML
-    datepickerContainer.innerHTML = template
+    I.datepickerContainer.innerHTML = template
     calendarIcon.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1" /></svg>'
 
-    ## further setup
-    inputHeight = Math.ceil(inputElement.getBoundingClientRect().height)
-    if inputHeight % 2 then inputHeight += 1
-    log inputHeight
-    outerContainer.style.setProperty("--scrollroll-input-height", "#{inputHeight}px")
+    ## cache used DOM Elements
+    I.acceptButton = I.datepickerContainer.getElementsByClassName("scrollroll-accept-button")[0]
 
-    outerHeight = datepickerContainer.getBoundingClientRect().height
-    log "outerHeight #{outerHeight}"    
-    visibleElements = Math.ceil(outerHeight / (2 * inputHeight))
-    log "visibleElements: #{visibleElements}"
+    I.dayPicker = I.datepickerContainer.getElementsByClassName("scrollroll-day-picker")[0]
+    I.monthPicker = I.datepickerContainer.getElementsByClassName("scrollroll-month-picker")[0]
+    I.yearPicker = I.datepickerContainer.getElementsByClassName("scrollroll-year-picker")[0]
+
+    ## Adding Elements to the picker
+    addDayElements(I.dayPicker)
+    addMonthElements(I.monthPicker)
+    addYearElements(I.yearPicker, I.allYears)
+
+    I.dayElements = I.dayPicker.getElementsByClassName("scrollroll-element")
+    return
+
+setPickerPositions = (I) -> # I is the instance
+    log "setInitialPositions"
+    I.previousYearScroll = scrollFromPos(I.yearPos, I.height)
+    I.yearPicker.scrollTo(0, I.previousYearScroll)
     
-    acceptButton = datepickerContainer.getElementsByClassName("scrollroll-accept-button")[0]
+    I.previousMonthScroll = scrollFromPos(I.monthPos, I.height)
+    I.monthPicker.scrollTo(0, I.previousMonthScroll)
 
-    dayPicker = datepickerContainer.getElementsByClassName("scrollroll-day-picker")[0]
-    monthPicker = datepickerContainer.getElementsByClassName("scrollroll-month-picker")[0]
-    yearPicker = datepickerContainer.getElementsByClassName("scrollroll-year-picker")[0]
+    I.previousDayScroll = scrollFromPos(I.dayPos, I.height)
+    I.dayPicker.scrollTo(0, I.previousDayScroll)
+    return
 
-    addDayElements(dayPicker)
-    addMonthElements(monthPicker)
-    addYearElements(yearPicker)
+adjustMaxDays = (I) -> # I is the instance
+    # log "adjustMaxDays"
+    I.maxDays = daysForMonth[I.monthPos]
 
-    yearPos = allYears.length - 43
-    previousYearScroll = scrollFromPos(yearPos)
-    yearPicker.scrollTo(0, previousYearScroll)
+    if !(I.allYears[I.yearPos] % 4) and (I.maxDays == 28) then I.maxDays++ # leap year
     
-    monthPos = Math.ceil(allMonthStrings.length / 2) - 1
-    previousMonthScroll = scrollFromPos(monthPos)
-    monthPicker.scrollTo(0, previousMonthScroll)
-
-    daysPos = Math.floor(allDayStrings.length / 2) - 1
-    previousDayScroll = scrollFromPos(daysPos)
-    dayPicker.scrollTo(0, previousDayScroll)
-
-    inputElement.addEventListener("click", inputElementClicked)
-    inputElement.addEventListener("focus", inputElementFocused)
-    acceptButton.addEventListener("click", acceptButtonClicked)
+    for pos in [28..30]
+        if I.maxDays <= pos then I.dayElements[pos].style.opacity = "0.5"
+        else I.dayElements[pos].style.removeProperty("opacity")
     return
 
 ############################################################
-inputElementFocused = (evnt) ->
-    log "inputElementFocused"
+attachEventListeners = (I) -> # I is the instance
+    log "attachEventListeners"    
+    I.element.addEventListener("click", (evnt) -> inputElementClicked(evnt, I))
+    I.element.addEventListener("focus", (evnt) -> inputElementFocused(evnt, I))
+    I.acceptButton.addEventListener("click", (evnt) -> acceptButtonClicked(evnt, I))
+    return
+
+#endregion
+
+############################################################
+#region heartbeat functions
+
+checkDayScroll = (I) ->
+    # log "checkDayScroll"
+    scroll = I.dayPicker.scrollTop 
+    posScroll = scrollFromPos(I.dayPos, I.height)
+    
+    # log "scroll:  #{scroll}"
+    # log "pos: #{I.dayPos}"
+    # log "posSCroll: #{posScroll}"
+
+    ## when scroll did not change and we we are not on our valid scroll position
+    if I.previousDayScroll == scroll and scroll != posScroll
+        # then we snap to the next valid scroll position
+        I.dayPos = posFromScroll(scroll, I.height)
+        if I.dayPos > (I.maxDays - 1) then I.dayPos = I.maxDays - 1
+        scroll = scrollFromPos(I.dayPos, I.height)
+        I.dayPicker.scrollTo(0, scroll)
+        ## this is a hack - being exact this should be done on every change of the UI
+        resetImpossibleDayColor(I)
+
+    I.previousDayScroll = scroll
+    return
+
+checkMonthScroll = (I) ->
+    # log "checkMonthScroll"
+
+    scroll = I.monthPicker.scrollTop 
+    posScroll = scrollFromPos(I.monthPos, I.height)
+    
+    # log "scroll:  #{scroll}"
+    # log "pos: #{I.monthPos}"
+    # log "posSCroll: #{posScroll}"
+
+    ## when scroll did not change and we we are not on our valid scroll position
+    if I.previousMonthScroll == scroll and scroll != posScroll
+        # then we snap to the next valid scroll position
+        I.monthPos = posFromScroll(scroll, I.height)
+        if I.monthPos > 11 then I.monthPos = 11 # 11 is last position
+        scroll = scrollFromPos(I.monthPos, I.height)
+        I.monthPicker.scrollTo(0, scroll)
+        ## this is a hack - being exact this should be done on every change of the UI
+        resetImpossibleDayColor(I)
+
+    I.previousMonthScroll = scroll
+    return
+
+checkYearScroll = (I) ->
+    # log "checkYearScroll"
+    scroll = I.yearPicker.scrollTop 
+    posScroll = scrollFromPos(I.yearPos, I.height)
+    
+    # log "scroll:  #{currentScroll}"
+    # log "pos: #{I.yearPos}"
+    # log "posSCroll: #{posScroll}"
+
+    ## when scroll did not change and we we are not on our valid scroll position
+    if I.previousYearScroll == scroll and scroll != posScroll
+        # then we snap to the next valid scroll position
+        I.yearPos = posFromScroll(scroll, I.height)
+        if I.yearPos >= I.allYears.length then I.yearPos = I.allYears.length - 1
+        scroll = scrollFromPos(I.yearPos, I.height)
+        I.yearPicker.scrollTo(0, scroll)
+        ## this is a hack - being exact this should be done on every change of the UI
+        resetImpossibleDayColor(I)
+
+    I.previousYearScroll = scroll
+    return
+
+#endregion
+
+############################################################
+#region event Listeners
+
+############################################################
+inputElementClicked = (evnt, I) ->
+    log "inputElementClicked"
     evnt.preventDefault()
-    this.blur()
+    openScrollRollDatepicker(I)
     return false
 
-acceptButtonClicked = (evnt) ->
+############################################################
+inputElementFocused = (evnt, I) ->
+    log "inputElementFocused"
+    evnt.preventDefault()
+    evnt.target.blur()
+    return false
+
+############################################################
+acceptButtonClicked = (evnt, I) ->
     log "acceptButtonClicked"
-    day = allDayStrings[dayPos]
-    month = allMonthStrings[monthPos]
-    year = allYears[yearPos]
+
+    if I.dayPos > (I.maxDays - 1) # mark imposslble day
+        I.dayElements[I.dayPos].style.color = "red"
+        I.dayElements[I.dayPos].style.fontWeight = "bold"
+        return
+
+    day = allDayStrings[I.dayPos]
+    month = allMonthStrings[I.monthPos]
+    year = I.allYears[I.yearPos]
 
     date = "#{year}-#{month}-#{day}"
     inputValue = "#{day}.#{month}.#{year}"
-    if isInputElement
-        inputElement.value = inputValue
+    if I.isInputElement
+        I.element.value = inputValue
     else
-        inputElement.innerText = inputValue
-    # inputElement.value = date
-    closeScrollRollDatepicker()
+        I.element.innerText = inputValue
+    I.value = date
+
+    closeScrollRollDatepicker(I)
     return
 
-inputElementClicked = (evnt) ->
-    log "inputElementClicked"
-    evnt.preventDefault()
-    openScrollRollDatepicker()
-    return false
+#endregion
 
-
-closeScrollRollDatepicker = ->
-    log "closeScrollRollDatepicker"
-    if dayPos > (maxDays - 1) # invalid day
-        dayElements[dayPos].style.color = "red"
-        return
-    datepickerContainer.classList.remove("shown")
-    nexHeartbeat = () -> return
-    return
-
-openScrollRollDatepicker = ->
-    log "openScrollRollDatepicker"
-    datepickerContainer.classList.add("shown")
-
-    nexHeartbeat = heartbeat
-    requestAnimationFrame(nexHeartbeat)
-    return
+############################################################
+#region helper functions
 
 ############################################################
 #region adding scrollrollElements
-dayElements = []
 
-############################################################
 addDayElements = (picker) ->
     log "addDayElements"
     html = "<div class='scrollroll-element-space'></div>"    
@@ -234,8 +420,6 @@ addDayElements = (picker) ->
         html += "<div class='scrollroll-element'>#{day}</div>"
     html += "<div class='scrollroll-element-space'></div>"
     picker.innerHTML = html
-
-    dayElements = picker.getElementsByClassName("scrollroll-element")
     return
 
 addMonthElements = (picker) ->
@@ -247,7 +431,7 @@ addMonthElements = (picker) ->
     picker.innerHTML = html
     return
 
-addYearElements = (picker) ->
+addYearElements = (picker, allYears) ->
     log "addYearElements"
     html = "<div class='scrollroll-element-space'></div>"
     for year in allYears
@@ -258,107 +442,47 @@ addYearElements = (picker) ->
 
 #endregion
 
-############################################################
-heartbeat = ->
-    # log "heartbeat"
-    checkDayScroll()
-    checkMonthScroll()
-    checkYearScroll()
-    adjustMaxDays()
-
-    # setTimeout(heartbeat, 1000)
-    requestAnimationFrame(nexHeartbeat)
-    return
-
-############################################################
-previousDayScroll = 0
-dayPos = 0
-maxDays = 31
-
-############################################################
-checkDayScroll = ->
-    # log "checkDayScroll"
-    currentScroll = dayPicker.scrollTop 
-    posScroll = scrollFromPos(dayPos)
-    
-    log "scroll:  #{currentScroll}"
-    log "pos: #{dayPos}"
-    log "posSCroll: #{posScroll}"
-
-    ## when scroll did not change and we we are not on our valid scroll position
-    if previousDayScroll == currentScroll and currentScroll != posScroll
-        # then we snap to the next valid scroll position
-        dayPos = posFromScroll(currentScroll)
-        if dayPos > (maxDays - 1) then dayPos = maxDays - 1
-        currentScroll = scrollFromPos(dayPos)
-        dayPicker.scrollTo(0, currentScroll)
-        for pos in [28..30] 
-            dayElements[pos].style.removeProperty("color")
-
-    previousDayScroll = currentScroll
-    return
-
-############################################################
-previousMonthScroll = 0
-monthPos = 0
-
-############################################################
-checkMonthScroll = ->
-    # log "checkMonthScroll"
-    currentScroll = monthPicker.scrollTop 
-    
-    # log "scroll:  #{currentScroll}"
-    # log "pos: #{montallDayElhPos}"
-
-    posScroll = scrollFromPos(monthPos)
-    ## when scroll did not change and we we are not on our valid scroll position
-    if previousMonthScroll == currentScroll and currentScroll != posScroll
-        # then we snap to the next valid scroll position
-        monthPos = posFromScroll(currentScroll)
-        if monthPos > 11 then monthPos = 11 # 11 is last position
-        currentScroll = scrollFromPos(monthPos)
-        monthPicker.scrollTo(0, currentScroll)
-
-    previousMonthScroll = currentScroll
-    return
-
-############################################################
-adjustMaxDays = ->
-    # log "adjustMaxDays"
-    maxDays = daysForMonth[monthPos]
-
-    if !(allYears[yearPos] % 4) and (maxDays == 28) then maxDays++ # leap year
-    
+resetImpossibleDayColor = (I) ->
     for pos in [28..30]
-        dayElements[pos].style.removeProperty("color")
-        if maxDays <= pos then dayElements[pos].style.opacity = "0.5"
-        else dayElements[pos].style.removeProperty("opacity")
+        I.dayElements[pos].style.removeProperty("color")
+        I.dayElements[pos].style.removeProperty("font-weight")
     return
 
 ############################################################
-previousYearScroll = 0
-yearPos = 0
+closeScrollRollDatepicker = (I) ->
+    log "closeScrollRollDatepicker"
+    I.outerContainer.classList.remove("shown")
 
-############################################################
-checkYearScroll = ->
-    # log "checkYearScroll"
-    currentScroll = yearPicker.scrollTop 
-    
-    # log "scroll:  #{currentScroll}"
-    # log "pos: #{yearPos}"
+    I.nexHeartbeat = () -> return
+    return
 
-    posScroll = scrollFromPos(yearPos)
-    ## when scroll did not change and we we are not on our valid scroll position
-    if previousYearScroll == currentScroll and currentScroll != posScroll
-        # then we snap to the next valid scroll position
-        yearPos = posFromScroll(currentScroll)
-        if yearPos > 150 then yearPos = 150 # 150 is last position
-        currentScroll = scrollFromPos(yearPos)
-        yearPicker.scrollTo(0, currentScroll)
+openScrollRollDatepicker = (I) ->
+    log "openScrollRollDatepicker"
+    I.outerContainer.classList.add("shown")
 
-    previousYearScroll = currentScroll
+    I.nexHeartbeat = I.heartbeat.bind(I)
+    requestAnimationFrame(I.nexHeartbeat)
     return
 
 ############################################################
-scrollFromPos = (pos) -> (inputHeight / 2) + (pos * inputHeight)
-posFromScroll = (scroll) -> (scroll - ( scroll % inputHeight)) / inputHeight 
+scrollFromPos = (pos, height) -> (height / 2) + (pos * height)
+posFromScroll = (scroll, height) -> (scroll - ( scroll % height)) / height 
+
+############################################################
+isConnectedElement = (el) ->
+    if typeof HTMLElement == "object"
+        return el instanceof HTMLElement and el.isConnected
+    else
+        return el? and el.nodeType == 1 and el.isConnected
+    return
+
+############################################################
+setOptions = (I, options) ->
+    Object.assign(I, defaultOptions)
+    Object.assign(I, options)
+    return
+
+#endregion
+
+
+
