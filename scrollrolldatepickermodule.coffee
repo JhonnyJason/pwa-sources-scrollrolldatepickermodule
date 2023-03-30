@@ -139,6 +139,9 @@ export class ScrollRollDatepicker
         return
 
     ########################################################
+    acceptCurrentPositions: -> acceptButtonClicked(null, this)
+
+    ########################################################
     reset: ->
         @value = ""
         setPickerPositions(this)
@@ -288,6 +291,9 @@ attachEventListeners = (I) -> # I is the instance
     I.element.addEventListener("click", (evnt) -> inputElementClicked(evnt, I))
     I.element.addEventListener("focus", (evnt) -> inputElementFocused(evnt, I))
     I.acceptButton.addEventListener("click", (evnt) -> acceptButtonClicked(evnt, I))
+    allDataElements = I.datepickerContainer.getElementsByClassName("scrollroll-element")
+    for dataElement in allDataElements
+        dataElement.addEventListener("click", (evnt) -> dataElementClicked(evnt, I))
     return
 
 #endregion
@@ -405,6 +411,26 @@ acceptButtonClicked = (evnt, I) ->
     closeScrollRollDatepicker(I)
     return
 
+
+############################################################
+dataElementClicked = (evnt, I) ->
+    log "dataElementClicked"
+    data = evnt.target.getAttribute("data")
+    tokens = data.split("-")
+    if tokens.length != 2 then throw new Error("malformed data in scrollroll-element")
+    pos = parseInt(tokens[1])
+    if isNaN(pos) then throw new Error("malformed data in scrollroll-element")
+
+    switch tokens[0]
+        when "day" then I.dayPos = pos
+        when "month" then I.monthPos = pos
+        when "year" then I.yearPos = pos
+        else throw new Error("malformed data in scrollroll-element")
+
+    setPickerPositions(I)
+    return
+
+
 #endregion
 
 ############################################################
@@ -416,8 +442,8 @@ acceptButtonClicked = (evnt, I) ->
 addDayElements = (picker) ->
     log "addDayElements"
     html = "<div class='scrollroll-element-space'></div>"    
-    for day in allDayStrings
-        html += "<div class='scrollroll-element'>#{day}</div>"
+    for day,pos in allDayStrings
+        html += "<div data='day-#{pos}' class='scrollroll-element'>#{day}</div>"
     html += "<div class='scrollroll-element-space'></div>"
     picker.innerHTML = html
     return
@@ -425,8 +451,8 @@ addDayElements = (picker) ->
 addMonthElements = (picker) ->
     log "addMonthElements" 
     html = "<div class='scrollroll-element-space'></div>"
-    for month in allMonthStrings
-        html += "<div class='scrollroll-element'>#{month}</div>"
+    for month,pos in allMonthStrings
+        html += "<div data='month-#{pos}'class='scrollroll-element'>#{month}</div>"
     html += "<div class='scrollroll-element-space'></div>"
     picker.innerHTML = html
     return
@@ -434,9 +460,9 @@ addMonthElements = (picker) ->
 addYearElements = (picker, allYears) ->
     log "addYearElements"
     html = "<div class='scrollroll-element-space'></div>"
-    for year in allYears
-        html += "<div class='scrollroll-element'>#{year}</div>"
-    html += "<div class='scrollroll-element-space'></div>"
+    for year,pos in allYears
+        html += "<div data='year-#{pos}' class='scrollroll-element'>#{year}</div>"
+    html += "<div  class='scrollroll-element-space'></div>"
     picker.innerHTML = html
     return
 
@@ -454,6 +480,7 @@ closeScrollRollDatepicker = (I) ->
     I.outerContainer.classList.remove("shown")
 
     I.nexHeartbeat = () -> return
+    I.isOn = false
     return
 
 openScrollRollDatepicker = (I) ->
@@ -462,6 +489,7 @@ openScrollRollDatepicker = (I) ->
 
     I.nexHeartbeat = I.heartbeat.bind(I)
     requestAnimationFrame(I.nexHeartbeat)
+    I.isOn = true
     return
 
 ############################################################
@@ -483,6 +511,3 @@ setOptions = (I, options) ->
     return
 
 #endregion
-
-
-
