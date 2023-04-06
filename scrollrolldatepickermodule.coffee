@@ -315,8 +315,11 @@ checkDayScroll = (I) ->
         # then we snap to the next valid scroll position
         I.dayPos = posFromScroll(scroll, I.height)
         if I.dayPos > (I.maxDays - 1) then I.dayPos = I.maxDays - 1
+        
+        ## We wouldn't need this using scroll-snap-type -> seems does not work
         scroll = scrollFromPos(I.dayPos, I.height)
         I.dayPicker.scrollTo(0, scroll)
+        
         ## this is a hack - being exact this should be done on every change of the UI
         resetImpossibleDayColor(I)
 
@@ -338,8 +341,11 @@ checkMonthScroll = (I) ->
         # then we snap to the next valid scroll position
         I.monthPos = posFromScroll(scroll, I.height)
         if I.monthPos > 11 then I.monthPos = 11 # 11 is last position
+        
+        ## We wouldn't need this using scroll-snap-type -> seems does not work
         scroll = scrollFromPos(I.monthPos, I.height)
         I.monthPicker.scrollTo(0, scroll)
+        
         ## this is a hack - being exact this should be done on every change of the UI
         resetImpossibleDayColor(I)
 
@@ -360,8 +366,11 @@ checkYearScroll = (I) ->
         # then we snap to the next valid scroll position
         I.yearPos = posFromScroll(scroll, I.height)
         if I.yearPos >= I.allYears.length then I.yearPos = I.allYears.length - 1
+        
+        ## We wouldn't need this using scroll-snap-type -> seems does not work
         scroll = scrollFromPos(I.yearPos, I.height)
         I.yearPicker.scrollTo(0, scroll)
+        
         ## this is a hack - being exact this should be done on every change of the UI
         resetImpossibleDayColor(I)
 
