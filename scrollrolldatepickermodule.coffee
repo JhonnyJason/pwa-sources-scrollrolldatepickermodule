@@ -288,12 +288,31 @@ adjustMaxDays = (I) -> # I is the instance
 ############################################################
 attachEventListeners = (I) -> # I is the instance
     log "attachEventListeners"    
+    # controllers, element -> general input element - click opens the scrollroll
     I.element.addEventListener("click", (evnt) -> inputElementClicked(evnt, I))
     I.element.addEventListener("focus", (evnt) -> inputElementFocused(evnt, I))
+    # acceptButton -> closes the scrollroll
     I.acceptButton.addEventListener("click", (evnt) -> acceptButtonClicked(evnt, I))
+
+    # individual scroll rolls - add onDrag scroll
+    I.dayPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.dayPicker))
+    I.dayPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.dayPicker))
+    I.monthPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.monthPicker))
+    I.monthPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.monthPicker))
+    I.yearPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.yearPicker))
+    I.yearPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.yearPicker))
+
+    document.addEventListener("mousemove", (evnt) -> mouseMoved(evnt, I))
+    document.addEventListener("touchmove", (evnt) -> touchMoved(evnt, I))
+
+    document.addEventListener("mouseup", (evnt) -> mouseUpped(evnt, I))
+    document.addEventListener("touchend", (evnt) -> touchEnded(evnt, I))
+
+    # data elements - choose them on click
     allDataElements = I.datepickerContainer.getElementsByClassName("scrollroll-element")
     for dataElement in allDataElements
         dataElement.addEventListener("click", (evnt) -> dataElementClicked(evnt, I))
+    
     return
 
 #endregion
@@ -421,6 +440,62 @@ acceptButtonClicked = (evnt, I) ->
     return
 
 
+
+############################################################
+mouseDowned = (evnt, I, picker) ->
+    log "mouseDowned"
+    I.dragObj = {picker}
+    I.dragObj.lastY = evnt.screenY
+
+    return
+
+touchStarted = (evnt, I, picker) ->
+    log "touchStarted"
+    touch = evnt.changedTouches[0]
+
+    I.dragObj = {picker}
+    I.dragObj.touchID = touch.identifier
+    I.dragObj.lastY = touch.screenY
+
+    return
+
+
+############################################################
+mouseMoved = (evnt, I) ->
+    return unless I.dragObj?
+    log "mouseMoved"
+    deltaY = I.dragObj.lastY - evnt.screenY
+    I.dragObj.lastY = evnt.screenY
+    scrollDragDelta(deltaY, I.dragObj.picker)
+    return
+
+touchMoved = (evnt, I) ->
+    return unless I.dragObj?
+    log "touchMoved"
+   
+    for touch in evnt.changedTouches
+        if touch.identifier == I.dragObj.touchID
+            deltaY = I.dragObj.lastY - touch.screenY
+            I.dragObj.lastY = touch.screenY
+            scrollDragDelta(deltaY, I.dragObj.picker)
+    return
+
+############################################################
+mouseUpped = (evnt, I) ->
+    return unless I.dragObj?
+    log "mouseUpped"
+    I.dragObj = null
+    return
+
+touchEnded = (evnt, I) ->
+    return unless I.dragObj?
+    log "touchEnded"
+    I.dragObj = null
+    return
+
+
+
+
 ############################################################
 dataElementClicked = (evnt, I) ->
     log "dataElementClicked"
@@ -444,6 +519,14 @@ dataElementClicked = (evnt, I) ->
 
 ############################################################
 #region helper functions
+
+############################################################
+scrollDragDelta = (deltaY, picker) ->
+    log "scrollDragDelta"
+    currentScroll = picker.scrollTop
+    scroll = currentScroll + deltaY
+    picker.scrollTo(0, scroll)
+    return
 
 ############################################################
 #region adding scrollrollElements
