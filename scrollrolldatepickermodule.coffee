@@ -571,6 +571,7 @@ closeScrollRollDatepicker = (I) ->
     log "closeScrollRollDatepicker"
     I.outerContainer.classList.remove("shown")
 
+    I.dragObj = null
     I.nexHeartbeat = () -> return
     I.isOn = false
     return
