@@ -329,8 +329,12 @@ checkDayScroll = (I) ->
     # log "pos: #{I.dayPos}"
     # log "posSCroll: #{posScroll}"
 
-    ## when scroll did not change and we we are not on our valid scroll position
-    if I.previousDayScroll == scroll and scroll != posScroll
+    notDragging  = !I.dragObj?
+    notScrolled = I.previousDayScroll == scroll
+    scrollPositionOff = scroll != posScroll
+
+    ## when we are not scrolling and our scroll position is not valid
+    if notDragging and notScrolled and scrollPositionOff
         # then we snap to the next valid scroll position
         I.dayPos = posFromScroll(scroll, I.height)
         if I.dayPos > (I.maxDays - 1) then I.dayPos = I.maxDays - 1
@@ -355,8 +359,12 @@ checkMonthScroll = (I) ->
     # log "pos: #{I.monthPos}"
     # log "posSCroll: #{posScroll}"
 
-    ## when scroll did not change and we we are not on our valid scroll position
-    if I.previousMonthScroll == scroll and scroll != posScroll
+    notDragging  = !I.dragObj?
+    notScrolled = I.previousMonthScroll == scroll
+    scrollPositionOff = scroll != posScroll
+
+    ## when we are not scrolling and our scroll position is not valid
+    if notDragging and notScrolled and scrollPositionOff
         # then we snap to the next valid scroll position
         I.monthPos = posFromScroll(scroll, I.height)
         if I.monthPos > 11 then I.monthPos = 11 # 11 is last position
@@ -380,8 +388,12 @@ checkYearScroll = (I) ->
     # log "pos: #{I.yearPos}"
     # log "posSCroll: #{posScroll}"
 
-    ## when scroll did not change and we we are not on our valid scroll position
-    if I.previousYearScroll == scroll and scroll != posScroll
+    notDragging  = !I.dragObj?
+    notScrolled = I.previousYearScroll == scroll
+    scrollPositionOff = scroll != posScroll
+
+    ## when we are not scrolling and our scroll position is not valid
+    if notDragging and notScrolled and scrollPositionOff
         # then we snap to the next valid scroll position
         I.yearPos = posFromScroll(scroll, I.height)
         if I.yearPos >= I.allYears.length then I.yearPos = I.allYears.length - 1
@@ -446,7 +458,7 @@ mouseDowned = (evnt, I, picker) ->
     log "mouseDowned"
     I.dragObj = {picker}
     I.dragObj.lastY = evnt.screenY
-
+    I.dragObj.hasMoved = false
     return
 
 touchStarted = (evnt, I, picker) ->
@@ -464,6 +476,7 @@ touchStarted = (evnt, I, picker) ->
 mouseMoved = (evnt, I) ->
     return unless I.dragObj?
     log "mouseMoved"
+    I.dragObj.hasMoved = true
     deltaY = I.dragObj.lastY - evnt.screenY
     I.dragObj.lastY = evnt.screenY
     scrollDragDelta(deltaY, I.dragObj.picker)
@@ -484,6 +497,7 @@ touchMoved = (evnt, I) ->
 mouseUpped = (evnt, I) ->
     return unless I.dragObj?
     log "mouseUpped"
+    if I.dragObj.hasMoved then I.preventClick = true
     I.dragObj = null
     return
 
@@ -499,6 +513,9 @@ touchEnded = (evnt, I) ->
 ############################################################
 dataElementClicked = (evnt, I) ->
     log "dataElementClicked"
+    if I.preventClick
+        delete I.preventClick
+        return
     data = evnt.target.getAttribute("data")
     tokens = data.split("-")
     if tokens.length != 2 then throw new Error("malformed data in scrollroll-element")
