@@ -8,7 +8,9 @@ import { createLogFunctions } from "thingy-debug"
 ## TODO change the way how we build the basic datepicker
 #  - adjustable formate of ddmmyyyy
 #  - adjustable separator
-template = document.getElementById("scrollrolldatepicker-hidden-template").innerHTML
+template = null
+hiddenTemplateEl = document.getElementById("scrollrolldatepicker-hidden-template") 
+if hiddenTemplateEl? then template = hiddenTemplateEl.innerHTML
 
 ############################################################
 #region DOM Cache
@@ -112,6 +114,7 @@ export class ScrollRollDatepicker
 
     ########################################################
     initialize: ->
+
         checkElement(this)
         digestOptions(this)
 
