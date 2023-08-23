@@ -148,8 +148,34 @@ export class ScrollRollDatepicker
     reset: ->
         @value = ""
         setPickerPositions(this)
-        @datepickerContainer.classList.remove("shown")
+        @outerContainer.classList.remove("shown")
+        @outerContainer.classList.remove("frozen")
+        @frozen = false
         @nexHeartbeat = () -> return
+        return
+
+    setValue: (value) ->
+        @value = value
+
+        tokens = value.split("-")
+        
+        year = tokens[0]
+        month = tokens[1]
+        day = tokens[2]
+
+        inputValue = "#{day}.#{month}.#{year}"
+        if @isInputElement
+            @element.value = inputValue
+        else
+            @element.innerText = inputValue
+        
+        setPickerPositions(this)
+        return
+
+    ########################################################
+    freeze: ->
+        @outerContainer.classList.add("frozen")
+        @frozen = true
         return
 
     ########################################################
@@ -420,6 +446,8 @@ checkYearScroll = (I) ->
 inputElementClicked = (evnt, I) ->
     log "inputElementClicked"
     evnt.preventDefault()
+    if I.frozen then return true
+
     openScrollRollDatepicker(I)
     return false
 
@@ -453,7 +481,6 @@ acceptButtonClicked = (evnt, I) ->
 
     closeScrollRollDatepicker(I)
     return
-
 
 
 ############################################################
@@ -496,6 +523,7 @@ touchMoved = (evnt, I) ->
             scrollDragDelta(deltaY, I.dragObj.picker)
     return
 
+
 ############################################################
 mouseUpped = (evnt, I) ->
     return unless I.dragObj?
@@ -509,8 +537,6 @@ touchEnded = (evnt, I) ->
     log "touchEnded"
     I.dragObj = null
     return
-
-
 
 
 ############################################################
