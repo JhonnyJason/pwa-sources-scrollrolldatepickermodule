@@ -122,16 +122,16 @@ export class ScrollRollDatepicker
         setPickerPositions(this)
         adjustMaxDays(this)
         # outerHeight = datepickerContainer.getBoundingClientRect().height
-        # log "outerHeight #{outerHeight}"    
+        # ## prod log "outerHeight #{outerHeight}"    
         # visibleElements = Math.ceil(outerHeight / (2 * inputHeight))
-        # log "visibleElements: #{visibleElements}"
+        # ## prod log "visibleElements: #{visibleElements}"
 
         attachEventListeners(this)
         return
 
     ########################################################
     heartbeat: ->
-        # log "heartbeat"
+        # ## prod log "heartbeat"
         checkDayScroll(this)
         checkMonthScroll(this)
         checkYearScroll(this)
@@ -189,7 +189,7 @@ export class ScrollRollDatepicker
 
 ############################################################
 checkElement = (I) -> # I is the instance
-    log "checkElement"
+    ## prod log "checkElement"
     if typeof I.element == "string" then I.element = document.getElementById(I.element)
     if !isConnectedElement(I.element) then throw new Error("Provided Element is not a connected DOM Element!")
 
@@ -199,7 +199,7 @@ checkElement = (I) -> # I is the instance
     return
 
 sanitizeElement = (I) -> # I is the instance
-    log "sanitizeElement"
+    ## prod log "sanitizeElement"
     # We cannot use a real Date input thanks to fkn Apple
     if I.isInputElement and I.element.getAttribute("type") != "text"
         I.element.setAttribute("type", "text")
@@ -209,7 +209,7 @@ sanitizeElement = (I) -> # I is the instance
 
 ############################################################
 digestOptions = (I) -> # I is the instance
-    log "digestOptions"
+    ## prod log "digestOptions"
     ## digest format TODO
 
     ## digest height
@@ -250,7 +250,7 @@ digestOptions = (I) -> # I is the instance
 
 ############################################################
 adjustHTML = (I) -> # I is the instance
-    log "adjustHTML"
+    ## prod log "adjustHTML"
     ## creating the container Elements
     I.outerContainer = document.createElement("div")
     I.datepickerContainer = document.createElement("div")
@@ -292,7 +292,7 @@ adjustHTML = (I) -> # I is the instance
     return
 
 setPickerPositions = (I) -> # I is the instance
-    log "setInitialPositions"
+    ## prod log "setInitialPositions"
     I.previousYearScroll = scrollFromPos(I.yearPos, I.height)
     I.yearPicker.scrollTo(0, I.previousYearScroll)
     
@@ -304,7 +304,7 @@ setPickerPositions = (I) -> # I is the instance
     return
 
 adjustMaxDays = (I) -> # I is the instance
-    # log "adjustMaxDays"
+    # ## prod log "adjustMaxDays"
     I.maxDays = daysForMonth[I.monthPos]
 
     if !(I.allYears[I.yearPos] % 4) and (I.maxDays == 28) then I.maxDays++ # leap year
@@ -316,7 +316,7 @@ adjustMaxDays = (I) -> # I is the instance
 
 ############################################################
 attachEventListeners = (I) -> # I is the instance
-    log "attachEventListeners"    
+    ## prod log "attachEventListeners"    
     # controllers, element -> general input element - click opens the scrollroll
     I.element.addEventListener("click", (evnt) -> inputElementClicked(evnt, I))
     I.element.addEventListener("focus", (evnt) -> inputElementFocused(evnt, I))
@@ -350,13 +350,13 @@ attachEventListeners = (I) -> # I is the instance
 #region heartbeat functions
 
 checkDayScroll = (I) ->
-    # log "checkDayScroll"
+    # ## prod log "checkDayScroll"
     scroll = I.dayPicker.scrollTop 
     posScroll = scrollFromPos(I.dayPos, I.height)
     
-    # log "scroll:  #{scroll}"
-    # log "pos: #{I.dayPos}"
-    # log "posSCroll: #{posScroll}"
+    # ## prod log "scroll:  #{scroll}"
+    # ## prod log "pos: #{I.dayPos}"
+    # ## prod log "posSCroll: #{posScroll}"
 
     notDragging  = !I.dragObj?
     notScrolled = I.previousDayScroll == scroll
@@ -379,14 +379,14 @@ checkDayScroll = (I) ->
     return
 
 checkMonthScroll = (I) ->
-    # log "checkMonthScroll"
+    # ## prod log "checkMonthScroll"
 
     scroll = I.monthPicker.scrollTop 
     posScroll = scrollFromPos(I.monthPos, I.height)
     
-    # log "scroll:  #{scroll}"
-    # log "pos: #{I.monthPos}"
-    # log "posSCroll: #{posScroll}"
+    # ## prod log "scroll:  #{scroll}"
+    # ## prod log "pos: #{I.monthPos}"
+    # ## prod log "posSCroll: #{posScroll}"
 
     notDragging  = !I.dragObj?
     notScrolled = I.previousMonthScroll == scroll
@@ -409,13 +409,13 @@ checkMonthScroll = (I) ->
     return
 
 checkYearScroll = (I) ->
-    # log "checkYearScroll"
+    # ## prod log "checkYearScroll"
     scroll = I.yearPicker.scrollTop 
     posScroll = scrollFromPos(I.yearPos, I.height)
     
-    # log "scroll:  #{currentScroll}"
-    # log "pos: #{I.yearPos}"
-    # log "posSCroll: #{posScroll}"
+    # ## prod log "scroll:  #{currentScroll}"
+    # ## prod log "pos: #{I.yearPos}"
+    # ## prod log "posSCroll: #{posScroll}"
 
     notDragging  = !I.dragObj?
     notScrolled = I.previousYearScroll == scroll
@@ -444,7 +444,7 @@ checkYearScroll = (I) ->
 
 ############################################################
 inputElementClicked = (evnt, I) ->
-    log "inputElementClicked"
+    ## prod log "inputElementClicked"
     evnt.preventDefault()
     if I.frozen then return true
 
@@ -453,14 +453,14 @@ inputElementClicked = (evnt, I) ->
 
 ############################################################
 inputElementFocused = (evnt, I) ->
-    log "inputElementFocused"
+    ## prod log "inputElementFocused"
     evnt.preventDefault()
     evnt.target.blur()
     return false
 
 ############################################################
 acceptButtonClicked = (evnt, I) ->
-    log "acceptButtonClicked"
+    ## prod log "acceptButtonClicked"
 
     if I.dayPos > (I.maxDays - 1) # mark imposslble day
         I.dayElements[I.dayPos].style.color = "red"
@@ -485,14 +485,14 @@ acceptButtonClicked = (evnt, I) ->
 
 ############################################################
 mouseDowned = (evnt, I, picker) ->
-    log "mouseDowned"
+    ## prod log "mouseDowned"
     I.dragObj = {picker}
     I.dragObj.lastY = evnt.screenY
     I.dragObj.hasMoved = false
     return
 
 touchStarted = (evnt, I, picker) ->
-    log "touchStarted"
+    ## prod log "touchStarted"
     touch = evnt.changedTouches[0]
 
     I.dragObj = {picker}
@@ -505,7 +505,7 @@ touchStarted = (evnt, I, picker) ->
 ############################################################
 mouseMoved = (evnt, I) ->
     return unless I.dragObj?
-    log "mouseMoved"
+    ## prod log "mouseMoved"
     I.dragObj.hasMoved = true
     deltaY = I.dragObj.lastY - evnt.screenY
     I.dragObj.lastY = evnt.screenY
@@ -514,7 +514,7 @@ mouseMoved = (evnt, I) ->
 
 touchMoved = (evnt, I) ->
     return unless I.dragObj?
-    log "touchMoved"
+    ## prod log "touchMoved"
    
     for touch in evnt.changedTouches
         if touch.identifier == I.dragObj.touchID
@@ -527,21 +527,21 @@ touchMoved = (evnt, I) ->
 ############################################################
 mouseUpped = (evnt, I) ->
     return unless I.dragObj?
-    log "mouseUpped"
+    ## prod log "mouseUpped"
     if I.dragObj.hasMoved then I.preventClick = true
     I.dragObj = null
     return
 
 touchEnded = (evnt, I) ->
     return unless I.dragObj?
-    log "touchEnded"
+    ## prod log "touchEnded"
     I.dragObj = null
     return
 
 
 ############################################################
 dataElementClicked = (evnt, I) ->
-    log "dataElementClicked"
+    ## prod log "dataElementClicked"
     if I.preventClick
         delete I.preventClick
         return
@@ -568,7 +568,7 @@ dataElementClicked = (evnt, I) ->
 
 ############################################################
 scrollDragDelta = (deltaY, picker) ->
-    log "scrollDragDelta"
+    ## prod log "scrollDragDelta"
     currentScroll = picker.scrollTop
     scroll = currentScroll + deltaY
     picker.scrollTo(0, scroll)
@@ -578,7 +578,7 @@ scrollDragDelta = (deltaY, picker) ->
 #region adding scrollrollElements
 
 addDayElements = (picker) ->
-    log "addDayElements"
+    ## prod log "addDayElements"
     html = "<div class='scrollroll-element-space'></div>"    
     for day,pos in allDayStrings
         html += "<div data='day-#{pos}' class='scrollroll-element'>#{day}</div>"
@@ -587,7 +587,7 @@ addDayElements = (picker) ->
     return
 
 addMonthElements = (picker) ->
-    log "addMonthElements" 
+    ## prod log "addMonthElements" 
     html = "<div class='scrollroll-element-space'></div>"
     for month,pos in allMonthStrings
         html += "<div data='month-#{pos}'class='scrollroll-element'>#{month}</div>"
@@ -596,7 +596,7 @@ addMonthElements = (picker) ->
     return
 
 addYearElements = (picker, allYears) ->
-    log "addYearElements"
+    ## prod log "addYearElements"
     html = "<div class='scrollroll-element-space'></div>"
     for year,pos in allYears
         html += "<div data='year-#{pos}' class='scrollroll-element'>#{year}</div>"
@@ -614,7 +614,7 @@ resetImpossibleDayColor = (I) ->
 
 ############################################################
 closeScrollRollDatepicker = (I) ->
-    log "closeScrollRollDatepicker"
+    ## prod log "closeScrollRollDatepicker"
     I.outerContainer.classList.remove("shown")
 
     I.dragObj = null
@@ -623,7 +623,7 @@ closeScrollRollDatepicker = (I) ->
     return
 
 openScrollRollDatepicker = (I) ->
-    log "openScrollRollDatepicker"
+    ## prod log "openScrollRollDatepicker"
     I.outerContainer.classList.add("shown")
 
     I.nexHeartbeat = I.heartbeat.bind(I)
