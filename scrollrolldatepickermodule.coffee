@@ -241,7 +241,7 @@ digestOptions = (I) -> # I is the instance
         when "end" then I.yearPos = rangeLength
         else
             I.yearPos = parseInt(I.yearPos)
-            if isNan(I.yearPos) then throw new Error("Invalid yearPos provided!")
+            if isNaN(I.yearPos) then throw new Error("Invalid yearPos provided!")
             if I.yearPos <= endYear and I.yearPos >= startYear
                 I.yearPos = I.yearPos - startYear
             else if I.yearPos > rangeLength then I.yearPos = rangeLength
