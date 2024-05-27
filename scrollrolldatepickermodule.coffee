@@ -114,7 +114,7 @@ export class ScrollRollDatepicker
 
     ########################################################
     initialize: ->
-
+        log "initialize"
         checkElement(this)
         digestOptions(this)
 
