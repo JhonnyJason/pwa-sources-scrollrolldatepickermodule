@@ -13,6 +13,10 @@ hiddenTemplateEl = document.getElementById("scrollrolldatepicker-hidden-template
 if hiddenTemplateEl? then template = hiddenTemplateEl.innerHTML
 
 ############################################################
+heatbeatMS = 300
+wheelSpeedFactor = 0.3
+
+############################################################
 #region DOM Cache
 inputElement = null
 outerContainer = null
@@ -106,6 +110,7 @@ defaultOptions =  {
     dayPos: 14 # position index of day array 0 -> 01 ... 30 -> 31
     monthPos: 6 # position index of month array 0 -> 01 ... 11 -> 12
     yearPos: "middle" # position index of year | specific year in Range | "start", "middle" or "end"
+
 }
 
 ############################################################
@@ -138,7 +143,8 @@ export class ScrollRollDatepicker
         adjustMaxDays(this)
 
         # setTimeout(@nexHeartbeat, 1000) ## slower debug heartbeat
-        requestAnimationFrame(@nexHeartbeat)
+        # requestAnimationFrame(@nexHeartbeat)
+        setTimeout(@nexHeartbeat, heatbeatMS)
         return
 
     ########################################################
@@ -147,6 +153,7 @@ export class ScrollRollDatepicker
     ########################################################
     reset: ->
         @value = ""
+        @element.value = ""
         setPickerPositions(this)
         @outerContainer.classList.remove("shown")
         @outerContainer.classList.remove("frozen")
@@ -326,10 +333,15 @@ attachEventListeners = (I) -> # I is the instance
     # individual scroll rolls - add onDrag scroll
     I.dayPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.dayPicker))
     I.dayPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.dayPicker))
+    I.dayPicker.addEventListener("wheel", slowerWheelScroll)
+
     I.monthPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.monthPicker))
     I.monthPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.monthPicker))
+    I.monthPicker.addEventListener("wheel", slowerWheelScroll)
+
     I.yearPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.yearPicker))
     I.yearPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.yearPicker))
+    I.yearPicker.addEventListener("wheel", slowerWheelScroll)
 
     document.addEventListener("mousemove", (evnt) -> mouseMoved(evnt, I))
     document.addEventListener("touchmove", (evnt) -> touchMoved(evnt, I))
@@ -462,6 +474,11 @@ inputElementFocused = (evnt, I) ->
 acceptButtonClicked = (evnt, I) ->
     log "acceptButtonClicked"
 
+    checkDayScroll(I)
+    checkMonthScroll(I)
+    checkYearScroll(I)
+    adjustMaxDays(I)
+
     if I.dayPos > (I.maxDays - 1) # mark imposslble day
         I.dayElements[I.dayPos].style.color = "red"
         I.dayElements[I.dayPos].style.fontWeight = "bold"
@@ -565,6 +582,14 @@ dataElementClicked = (evnt, I) ->
 
 ############################################################
 #region helper functions
+
+slowerWheelScroll = (evnt) ->
+    log "slowerWheelScroll"
+    evnt.preventDefault()
+    deltaY = evnt.deltaY
+    this.scrollTop += deltaY * wheelSpeedFactor
+    # return false
+    return
 
 ############################################################
 scrollDragDelta = (deltaY, picker) ->
