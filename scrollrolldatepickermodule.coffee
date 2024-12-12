@@ -332,22 +332,22 @@ attachEventListeners = (I) -> # I is the instance
 
     # individual scroll rolls - add onDrag scroll
     I.dayPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.dayPicker))
-    I.dayPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.dayPicker))
+    I.dayPicker.addEventListener("touchstart", ((evnt) -> touchStarted(evnt, I, I.dayPicker)), {passive: true})
     I.dayPicker.addEventListener("wheel", slowerWheelScroll)
 
     I.monthPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.monthPicker))
-    I.monthPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.monthPicker))
+    I.monthPicker.addEventListener("touchstart", ((evnt) -> touchStarted(evnt, I, I.monthPicker)), {passive: true})
     I.monthPicker.addEventListener("wheel", slowerWheelScroll)
 
     I.yearPicker.addEventListener("mousedown", (evnt) -> mouseDowned(evnt, I, I.yearPicker))
-    I.yearPicker.addEventListener("touchstart", (evnt) -> touchStarted(evnt, I, I.yearPicker))
+    I.yearPicker.addEventListener("touchstart", ((evnt) -> touchStarted(evnt, I, I.yearPicker)), {passive: true})
     I.yearPicker.addEventListener("wheel", slowerWheelScroll)
 
     document.addEventListener("mousemove", (evnt) -> mouseMoved(evnt, I))
-    document.addEventListener("touchmove", (evnt) -> touchMoved(evnt, I))
+    document.addEventListener("touchmove", ((evnt) -> touchMoved(evnt, I)), {passive: true})
 
     document.addEventListener("mouseup", (evnt) -> mouseUpped(evnt, I))
-    document.addEventListener("touchend", (evnt) -> touchEnded(evnt, I))
+    document.addEventListener("touchend", ((evnt) -> touchEnded(evnt, I)), {passive: true})
 
     # data elements - choose them on click
     allDataElements = I.datepickerContainer.getElementsByClassName("scrollroll-element")
