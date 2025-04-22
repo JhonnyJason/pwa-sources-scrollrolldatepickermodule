@@ -211,7 +211,9 @@ sanitizeElement = (I) -> # I is the instance
     if I.isInputElement and I.element.getAttribute("type") != "text"
         I.element.setAttribute("type", "text")
         I.element.setAttribute("placeholder", "dd.mm.yyyy")
-        I.element.setAttribute("readonly", "readonly")
+        # I.element.setAttribute("readonly", "readonly")
+        I.element.addEventListener("keydown", (evnt) -> evnt.preventDefault())
+        I.element.addEventListener("paste", (evnt) -> evnt.preventDefault())
     return
 
 ############################################################
